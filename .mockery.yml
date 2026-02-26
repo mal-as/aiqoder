@@ -1,0 +1,37 @@
+# Генерировать все интерфейсы и function types
+all: true
+
+# Класть моки рядом с исходным пакетом
+dir: "mocks"
+
+# Имя пакета моков
+pkgname: "mocks"
+
+# Имя структуры мока
+structname: "Mock{{.InterfaceName}}"
+
+# Форматирование
+formatter: goimports
+
+# Перезаписывать файлы
+force-file-write: true
+
+# Логирование
+log-level: info
+
+# Рекурсивный обход поддиректорий
+recursive: true
+
+# Структура именования мок-файлов
+filename: "mock_{{.InterfaceName}}.go"
+
+# Генерация в отдельном пакете (не inpackage)
+inpackage: false
+
+# Указываем пакеты для генерации
+# Используем "./..." для рекурсивного поиска во всех подпакетах
+packages:
+  ./...:
+    config:
+      # Включаем генерацию для всех интерфейсов в этих пакетах
+      all: true

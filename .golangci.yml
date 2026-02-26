@@ -1,0 +1,107 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    # --- Correctness ---
+    - errcheck       # unchecked errors
+    - govet          # suspicious constructs (printf, copylocks, …)
+    - staticcheck    # comprehensive static analysis (SA*, ST*, QF*)
+    - ineffassign    # ineffectual assignments
+    - unused         # unused exported/unexported identifiers
+
+    # --- Style ---
+    - revive         # fast, configurable linter (replaces golint)
+    - misspell       # catch typos in comments and strings
+    - gocritic       # collection of diagnostic/style/perf checks
+    - unconvert      # remove unnecessary type conversions
+    - unparam        # unused function parameters
+
+    # --- Error handling ---
+    - errorlint      # common error-wrapping mistakes
+    - wrapcheck      # errors from external packages must be wrapped
+
+    # --- Security ---
+    - gosec          # security-oriented checks (G101..G601)
+
+    # --- Performance ---
+    - prealloc       # slice declarations that could be pre-allocated
+
+    # --- Complexity ---
+    - cyclop         # cyclomatic complexity per function
+
+    # --- Tests ---
+    - testifylint    # correct usage of testify assertions
+
+    # --- Context ---
+    - noctx          # net/http requests sent without context
+
+    # --- nolint hygiene ---
+    - nolintlint     # malformed or unnecessary //nolint directives
+
+  settings:
+    errcheck:
+      check-type-assertions: true  # flag unchecked .(T) type assertions
+      # check-blank defaults to false — explicit _ = fn() ignores are acceptable
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment  # micro-optimisation that hurts readability
+
+    revive:
+      rules:
+        - name: error-strings
+        - name: if-return
+        - name: var-naming
+        - name: receiver-naming
+        - name: unused-parameter
+        - name: empty-block
+
+    misspell:
+      locale: US
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+
+    cyclop:
+      max-complexity: 20  # Connect function has complexity ~18
+
+    wrapcheck:
+      ignore-package-globs:
+        - github.com/mal-as/aiqoder/*  # internal packages need not wrap each other
+
+    gosec:
+      excludes:
+        - G304  # file path from variable — acceptable for this service
+        - G117  # exported struct field matches secret pattern — false positive on config struct
+        - G703  # path traversal taint — false positive on os.CreateTemp paths in tests
+
+    nolintlint:
+      require-explanation: true  # every //nolint must carry a reason
+      allow-unused: false
+
+  exclusions:
+    rules:
+      # "scanner" is a valid domain name for a code-scanning service; text/scanner is unrelated
+      - path: internal/services/scanner/
+        linters: [revive]
+        text: var-naming
+
+formatters:
+  enable:
+    - gofumpt    # stricter gofmt (opinionated blank-line rules)
+    - goimports  # import grouping / ordering
+
+  settings:
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes: github.com/mal-as/aiqoder
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
