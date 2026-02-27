@@ -18,7 +18,7 @@ type Config struct {
 type HTTP struct {
 	Listen           string        `env:"HTTP_LISTEN"            env-default:"localhost:8001"`
 	ReadTimeout      time.Duration `env:"HTTP_READ_TIMEOUT"      env-default:"60s"`
-	WriteTimeout     time.Duration `env:"HTTP_WRITE_TIMEOUT"     env-default:"60s"`
+	WriteTimeout     time.Duration `env:"HTTP_WRITE_TIMEOUT"     env-default:"0s"`
 	IdleTimeout      time.Duration `env:"HTTP_IDLE_TIMEOUT"      env-default:"60s"`
 	GracefulShutdown time.Duration `env:"HTTP_GRACEFUL_SHUTDOWN" env-default:"30s"`
 	Debug            bool          `env:"HTTP_DEBUG"             env-default:"false"`
