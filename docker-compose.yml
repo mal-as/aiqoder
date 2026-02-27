@@ -12,6 +12,28 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/18/docker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: aiqoder
+    env_file: .env
+    environment:
+      HTTP_LISTEN: "0.0.0.0:8001"
+      PG_HOST: "pgvector:5432"
+      OLLAMA_SERVER_ADDRESS: "http://host.docker.internal:11434"
+      GENKIT_ENV: ""
+    ports:
+      - "8001:8001"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data:

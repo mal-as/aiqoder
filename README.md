@@ -20,13 +20,13 @@ POST /api/v1/flows/queryRepository   →  embed question → retrieve → genera
 
 ## Prerequisites
 
-| Tool | Version |
-|------|---------|
-| Go | 1.26+ |
-| Docker & Docker Compose | any recent |
-| Ollama | any recent |
-| [Task](https://taskfile.dev) | v3+ |
-| [golangci-lint](https://golangci-lint.run) | 2.x (optional, for linting) |
+| Tool | Description |
+|------|-------------|
+| [Docker & Docker Compose](https://docs.docker.com/get-docker/) | Required for all workflows |
+| [Ollama](https://ollama.com) | LLM inference (runs on host) |
+| [Task](https://taskfile.dev) | Task runner |
+| Go 1.26+ | Required for local development only |
+| [golangci-lint](https://golangci-lint.run) 2.x | Required for linting only |
 
 Pull the required Ollama models before starting:
 
@@ -39,32 +39,46 @@ ollama pull qwen3-coder:480b-cloud  # generative model (or any chat model)
 
 ## Quick start
 
+### Docker (recommended)
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/mal-as/aiqoder.git
 cd aiqoder
 
 # 2. Copy and edit environment config
-cp .env.example .env   # adjust values if needed
+cp .env.example .env   # adjust model names and credentials if needed
 
-# 3. Start PostgreSQL with pgvector
-task infra:up
-
-# 4. Run the server (migrations apply automatically on startup)
-task run
+# 3. Build and start full stack (PostgreSQL + app)
+task docker:up
 ```
 
-The server starts on `localhost:8001` by default.
+The server starts on `localhost:8001`.
+
+> **Linux note:** `host.docker.internal` is resolved via `extra_hosts` in docker-compose, so Ollama on the host is reachable out of the box.
+
+> **Genkit Dev UI** is a local development tool and is not available when running in Docker. Use `task dev` for local development to get the UI at `http://localhost:4000`.
+
+### Local development
+
+```bash
+# 1. Start PostgreSQL only
+task infra:up
+
+# 2. Run the server locally with Genkit Dev UI at http://localhost:4000
+task dev
+```
 
 ---
 
 ## Configuration
 
-All settings are read from environment variables (or a `.env` file in the working directory).
+All settings are read from environment variables or a `.env` file in the working directory.
+When running via Docker, `HTTP_LISTEN`, `PG_HOST`, and `OLLAMA_SERVER_ADDRESS` are overridden by docker-compose.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HTTP_LISTEN` | `localhost:8001` | Address to listen on |
+| `HTTP_LISTEN` | `localhost:8001` | Address to listen on (`0.0.0.0:8001` in Docker) |
 | `HTTP_READ_TIMEOUT` | `60s` | HTTP read timeout |
 | `HTTP_WRITE_TIMEOUT` | `60s` | HTTP write timeout |
 | `HTTP_IDLE_TIMEOUT` | `60s` | HTTP idle timeout |
@@ -134,18 +148,34 @@ Content-Type: application/json
 
 ## Task reference
 
+### Docker
+
 ```bash
-task infra:up        # Start PostgreSQL (docker compose up -d)
-task infra:down      # Stop PostgreSQL
-task infra:logs      # Tail docker compose logs
-task migrate         # Run database migrations (standalone)
-task run             # go run ./cmd/server
-task devrun          # genkit start -- go run ./cmd/server  (Genkit Dev UI)
+task docker:up       # Build image and start full stack (PostgreSQL + app)
+task docker:down     # Stop full stack
+task docker:build    # Build Docker image only
+task docker:logs     # Tail application logs
+```
+
+### Local development
+
+```bash
+task infra:up        # Start PostgreSQL only (docker compose up -d pgvector)
+task infra:down      # Stop all containers
+task infra:logs      # Tail all docker compose logs
+task dev             # infra:up + run server with Genkit Dev UI
+task devrun          # Run server with Genkit Dev UI (without starting DB)
+task run             # go run ./cmd/server (no Genkit UI)
 task build           # Build binary → bin/server
+```
+
+### Code quality
+
+```bash
+task generate        # go generate ./...  (regenerate mocks)
 task lint            # golangci-lint run ./...
 task test            # go test ./...
 task test:coverage   # go test with HTML coverage report
-task dev             # infra:up + devrun
 ```
 
 ---
@@ -158,7 +188,7 @@ internal/
   app/                  Application wiring (DI root)
   config/               Environment config (cleanenv)
   flows/                Genkit flow definitions (index, query)
-  infrastrucure/
+  infrastructure/
     gogit/              Git clone via go-git
     repository/repos/   PostgreSQL repository (pgvector)
   models/               Shared domain types (Chunk, CodeFile, …)
@@ -167,7 +197,7 @@ internal/
     retriever/          Genkit pgvector retriever
     scanner/            Code file scanner
 pkg/
-  http_server/          Gin HTTP server wrapper
+  httpserver/           Gin HTTP server wrapper
   logger/               slog logger factory
   pg/                   pgxpool connection + goose migrations
   pg/transaction/       Transaction manager (SQLManager)

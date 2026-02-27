@@ -1,33 +1,51 @@
 version: '3'
 
 tasks:
-  # ── Infrastructure ───────────────────────────────────────────────────────────
+  # ── Infrastructure (DB only, for local dev) ───────────────────────────────
 
   infra:up:
-    desc: Start infrastructure (PostgreSQL with pgvector)
-    cmd: docker compose up -d
+    desc: Start PostgreSQL with pgvector (for local development)
+    cmd: docker compose up -d pgvector
 
   infra:down:
-    desc: Stop infrastructure
+    desc: Stop all containers
     cmd: docker compose down
 
   infra:logs:
     desc: Tail infrastructure logs
     cmd: docker compose logs -f
 
-  # ── Code generation ───────────────────────────────────────────────────────────
+  # ── Docker (full stack) ───────────────────────────────────────────────────
+
+  docker:build:
+    desc: Build the application Docker image
+    cmd: docker compose build
+
+  docker:up:
+    desc: Build and start full stack (PostgreSQL + app with Genkit UI)
+    cmd: docker compose up -d --build
+
+  docker:down:
+    desc: Stop full stack
+    cmd: docker compose down
+
+  docker:logs:
+    desc: Tail application logs
+    cmd: docker compose logs -f app
+
+  # ── Code generation ───────────────────────────────────────────────────────
 
   generate:
     desc: Run go generate on all packages (regenerates mocks, etc.)
     cmd: go generate ./...
 
-  # ── Code quality ──────────────────────────────────────────────────────────────
+  # ── Code quality ──────────────────────────────────────────────────────────
 
   lint:
     desc: Run golangci-lint
     cmd: golangci-lint run ./...
 
-  # ── Tests ─────────────────────────────────────────────────────────────────────
+  # ── Tests ─────────────────────────────────────────────────────────────────
 
   test:
     desc: Run all tests
@@ -37,24 +55,24 @@ tasks:
     desc: Run tests with coverage report
     cmd: go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html
 
-  # ── Build & run ──────────────────────────────────────────────────────────────
+  # ── Build & run (local dev) ───────────────────────────────────────────────
 
   build:
     desc: Build server binary to bin/server
     cmd: go build -o bin/server ./cmd/server
 
   run:
-    desc: Run the server (reads .env automatically)
+    desc: Run the server locally (reads .env automatically)
     cmd: go run ./cmd/server
 
   devrun:
-    desc: Run genkit ui with server
+    desc: Run server locally with Genkit Dev UI
     cmd: GENKIT_ENV=dev genkit start -- go run ./cmd/server
 
-  # ── Composite ────────────────────────────────────────────────────────────────
+  # ── Composite ────────────────────────────────────────────────────────────
 
   dev:
-    desc: Start infrastructure and run the server
+    desc: Start PostgreSQL and run the server locally with Genkit Dev UI
     cmds:
       - task: infra:up
       - task: devrun
